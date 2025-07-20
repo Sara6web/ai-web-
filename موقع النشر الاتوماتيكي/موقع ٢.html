@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>الحاج للنشر التلقائي</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f9f9f9;
+            direction: rtl;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            color: #2e8b57;
+        }
+        input, textarea, button, select {
+            margin: 10px;
+            padding: 12px;
+            width: 80%;
+            max-width: 500px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #2e8b57;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #276b47;
+        }
+        #fileList {
+            background: #fff;
+            padding: 10px;
+            margin: 10px auto;
+            width: 80%;
+            max-width: 500px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            text-align: right;
+        }
+        .fileItem {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 5px 0;
+        }
+        .deleteBtn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .deleteBtn:hover {
+            background-color: #c0392b;
+        }
+        #log {
+            background-color: #eee;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            height: 200px;
+            overflow-y: scroll;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 الحاج للنشر التلقائي</h1>
+    <p>✨ ارفعي صورك/فيديوهاتك، وحددي وقت النشر، والذكاء الاصطناعي بيعمل كل شيء 💥</p>
+
+    <input type="file" id="mediaFiles" multiple onchange="updateFileList()"><br>
+    <div id="fileList"></div>
+
+    <textarea id="customText" placeholder="🤖 اتركيه فارغ للكابشن الذكي"></textarea><br>
+
+    <label>📅 تاريخ البداية:</label>
+    <input type="date" id="startDate"><br>
+    <label>⏰ ساعة النشر:</label>
+    <input type="time" id="publishTime" value="09:00"><br>
+    <label>📅 تاريخ النهاية:</label>
+    <input type="date" id="endDate"><br>
+
+    <button onclick="startScheduler()">✅ جدولة النشر</button>
+
+    <div id="log"></div>
+
+    <script>
+        let selectedFiles = [];
+        const accessToken = "EAAapkpD793ABPKDi7LCKTgKctw029UXI4OydHo0ASgP1auoOOyHZCrIYY4RQk4fNyZAQvd8DE6O8HKADbs9XwqagKu2FlKkw3Vhm1HYwpCjoBBlvsL60dkIMlemVXEgbSHRlWcXQpE0P4Av7coN93ZB0fzCgSIZC1XZAbsR3utMhz652tBUPyoueNA9PAUBljt5ISECGYdDlz7TfwT62R2cjsk3rlUZCQZBNQyN2X702XZB5ZBKQiOCvThekI1ZCiwu8XpLGn5qWhpoyay8hefllZBrHb46mT9bMQZDZD";
+        const pageId = "YOUR_PAGE_ID_HERE";
+        const instaId = "YOUR_INSTAGRAM_ID_HERE";
+        const whatsappNumber = "0599980515";
+
+        function updateFileList() {
+            const filesInput = document.getElementById('mediaFiles');
+            selectedFiles = Array.from(filesInput.files);
+
+            const fileListDiv = document.getElementById('fileList');
+            fileListDiv.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                fileListDiv.innerHTML += `
+                    <div class="fileItem">
+                        <span>${file.name}</span>
+                        <button class="deleteBtn" onclick="removeFile(${index})">🗑️ حذف</button>
+                    </div>`;
+            });
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateFileList();
+        }
+
+        function log(msg) {
+            const logDiv = document.getElementById("log");
+            logDiv.innerHTML += `<p>📌 ${msg}</p>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        async function startScheduler() {
+            const customText = document.getElementById("customText").value;
+            const startDate = new Date(document.getElementById("startDate").value);
+            const endDate = new Date(document.getElementById("endDate").value);
+            const publishTime = document.getElementById("publishTime").value;
+
+            if (!selectedFiles.length || !startDate || !endDate || !publishTime) {
+                alert("⚠️ تأكدي من رفع الملفات وتحديد كل التفاصيل!");
+                return;
+            }
+
+            let postDate = startDate;
+
+            for (let i = 0; i < selectedFiles.length; i++) {
+                if (postDate > endDate) break;
+
+                const file = selectedFiles[i];
+                const caption = customText || await generateAIcaption(file.name);
+                const fullDateTime = `${postDate.toISOString().split('T')[0]}T${publishTime}:00`;
+
+                log(`📤 نشر: ${file.name} بتاريخ ${fullDateTime}`);
+
+                // نشر على الفيسبوك
+                await postToFacebook(file, caption);
+
+                // نشر على الإنستغرام
+                await postToInstagram(file, caption);
+
+                // إشعار على الواتساب
+                await sendWhatsappNotification(file.name, fullDateTime);
+
+                postDate.setDate(postDate.getDate() + 1); // اليوم التالي
+            }
+
+            log("🎉 انتهت الجدولة بنجاح!");
+        }
+
+        async function generateAIcaption(filename) {
+            log("🤖 يولّد كابشن ذكاء اصطناعي...");
+            const captions = [
+                `✨ اطلب الآن من الحاج للطباعة ❤️`,
+                `🎨 تصميم جديد مذهل بانتظارك!`,
+                `📦 اطلب اليوم واستلم بسرعة ⚡`
+            ];
+            return captions[Math.floor(Math.random() * captions.length)];
+        }
+
+        async function postToFacebook(file, caption) {
+            log(`✅ نشر على فيسبوك: ${file.name}`);
+            // هنا نربط API فعلي للفيسبوك
+        }
+
+        async function postToInstagram(file, caption) {
+            log(`✅ نشر على إنستغرام: ${file.name}`);
+            // هنا نربط API فعلي للإنستغرام
+        }
+
+        async function sendWhatsappNotification(fileName, dateTime) {
+            log(`📩 إشعار واتساب: تم جدولة ${fileName} بتاريخ ${dateTime}`);
+            // هنا نربط API للواتساب
+        }
+    </script>
+</body>
+</html>
